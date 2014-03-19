@@ -2,7 +2,8 @@ import numpy as np
 import numpy.linalg as linalg
 from itertools import izip
 
-omega = 0.5 * (-1 + np.sqrt(5))
+phi = 0.5 * (-1 + np.sqrt(5))
+
 
 class Recognizer(object):
 	"""docstring for Recognizer"""
@@ -32,7 +33,7 @@ class Recognizer(object):
 			i += 1
 		newPoints = newPoints[1:]  # Remove dummy points
 		if len(newPoints) == n - 1:  # Fix a possible roundoff error
-			newPoints = np.append(newPoints, [points[-1]], 0)
+			newPoints = np.append(newPoints, [points[0]], 0)
 		return newPoints
 
 	def rotateToZero(self, points):
@@ -79,29 +80,29 @@ class Recognizer(object):
 		selected_template = None
 		for template in templates:
 			d = self.distanceAtBestAngle(points, template, -angle, angle, angle_step)
-			if d < b:
+			if d < b:  # Get the best distance and template
 				b = d
 				selected_template = template
 		score = 1 - b / (0.5 * np.sqrt(size**2 + size**2))
 		return selected_template, score
 
 	def distanceAtBestAngle(self, points, template, angle_a, angle_b, angle_step):
-		x_1 = omega * angle_a + (1 - omega) * angle_b
+		x_1 = phi * angle_a + (1 - phi) * angle_b
 		f_1 = self.distanceAtAngle(points, template, x_1)
-		x_2 = (1 - omega) * angle_a + omega * angle_b
+		x_2 = (1 - phi) * angle_a + phi * angle_b
 		f_2 = self.distanceAtAngle(points, template, x_2)
-		while np.abs(angle_b, angle_a) > angle_step:
+		while np.abs(angle_b - angle_a) > angle_step:
 			if f_1 < f_2:
 				angle_b = x_2
 				x_2 = x_1
 				f_2 = f_1
-				x_1 = omega * angle_a + (1 - omega) * angle_b
+				x_1 = phi * angle_a + (1 - phi) * angle_b
 				f_1 = self.distanceAtAngle(points, template, x_1)
 			else:
 				angle_a = x_1
 				x_1 = x_2
 				f_1 = f_2
-				x_2 = (1 - omega) * angle_a + omega * angle_b
+				x_2 = (1 - phi) * angle_a + phi * angle_b
 				f_2 = self.distanceAtAngle(points, template, x_2)
 		return np.min(f_1, f_2)
 
@@ -144,11 +145,11 @@ def pairwiseIterator(elems):
 	yield (elems[-1], elems[0])
 
 
-points = [[0., 0.], [1., 1.], [2., 2.]]
+points = [[0., 0.], [1., 0.], [1., 1.], [0., 1.]]
 points = np.array(points)
 recognizer = Recognizer()
-resampled = recognizer.resample(points, 10)
-print resampled.shape
+resampled = recognizer.resample(points, 8)
+# print resampled
 # print recognizer.rotateToZero(resampled).shape
 
 # print points
