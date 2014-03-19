@@ -10,7 +10,7 @@ class Recognizer(object):
 		super(Recognizer, self).__init__()
 
 	def resample(self, points, n):
-		path_length = getPathLength(points) / (n)
+		path_length = pathLength(points) / (n)
 		newPoints = np.zeros((1, 2))
 		D = 0
 		i = 1
@@ -30,7 +30,9 @@ class Recognizer(object):
 			else:
 				D += d
 			i += 1
-		newPoints = newPoints[1:]
+		newPoints = newPoints[1:]  # Remove dummy points
+		if len(newPoints) == n - 1:  # Fix a possible roundoff error
+			newPoints = np.append(newPoints, [points[-1]], 0)
 		return newPoints
 
 	def rotateToZero(self, points):
@@ -110,6 +112,9 @@ class Recognizer(object):
 
 
 def pathDistance(path1, path2):
+	''' Calculates the distance between two paths. Fails if len(path1) != len(path2) '''
+	if len(path1) != len(path2):
+		raise Exception('Path lengths do not match!')
 	d = 0
 	for p_1, p_2 in izip(path1, path2):
 		d = d + getDistance(p_1, p_2)
@@ -126,7 +131,7 @@ def rotate2D(pts, cnt, ang=np.pi/4):
 	return np.dot(pts-cnt, np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]))+cnt
 
 
-def getPathLength(points):
+def pathLength(points):
 	length = 0
 	for (i, j) in pairwiseIterator(points):
 		length += linalg.norm(i - j)
@@ -144,6 +149,6 @@ points = np.array(points)
 recognizer = Recognizer()
 resampled = recognizer.resample(points, 10)
 print resampled.shape
-print recognizer.rotateToZero(resampled).shape
+# print recognizer.rotateToZero(resampled).shape
 
 # print points
