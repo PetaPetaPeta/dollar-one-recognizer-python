@@ -1,6 +1,14 @@
 import wx
 from recognizer import Recognizer
-from templates import *
+from template import *
+
+numPoints = 255
+
+print "Initializing recognizer"
+recognizer = Recognizer()
+for template in templates:
+	recognizer.addTemplate(template)
+print "Initilized recognizer!"
 
 
 class MyApp(wx.App):
@@ -14,8 +22,10 @@ class MyApp(wx.App):
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
 		wx.Frame.__init__(self, parent, title=title)
-		self.detected_shape = wx.StaticText(self, label='Detected shape:', pos=(10, 10))
-		self.detected_score = wx.StaticText(self, label='Detected score:', pos=(10, 30))
+		wx.StaticText(self, label='Detected shape:', pos=(10, 10))
+		wx.StaticText(self, label='Detected score:', pos=(10, 30))
+		self.detected_shape = wx.StaticText(self, label='', pos=(95, 10))
+		self.detected_score = wx.StaticText(self, label='', pos=(93, 30))
 		self.previous_points = []
 
 		self.Bind(wx.EVT_MOTION, self.OnMotion)
@@ -32,14 +42,19 @@ class MyFrame(wx.Frame):
 			dc.DrawCircle(x, y, 3)
 
 	def LeftUp(self, event):
-		self.detected_shape.SetLabel('test')
-		print self.previous_points
+		points = recognizer.resample(self.previous_points, numPoints)
+		points = recognizer.rotateToZero(points)
+		points = recognizer.scaleToSquare(points)
+		points = recognizer.translateToOrigin(points)
+		matched_template, score = recognizer.recognize(points)
+		self.detected_shape.SetLabel(matched_template.name)
+		self.detected_score.SetLabel("{0:.2f}".format(score*100))
+		self.previous_points = []
 
 	def LeftDown(self, event):
 		dc = wx.ClientDC(self)
 		dc.Clear()
 
 if __name__ == '__main__':
-	app = MyApp()
+	app = MyApp(recognizer)
 	app.MainLoop()
-
