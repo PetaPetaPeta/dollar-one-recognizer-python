@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from recognizer import *
+from template import *
 
 
 class TestRecognizer(unittest.TestCase):
@@ -10,18 +11,15 @@ class TestRecognizer(unittest.TestCase):
 
 	def test_resample(self):
 		points = [[0., 0.], [1., 0.], [1., 1.], [0., 1.]]
-		points = np.array(points)
 		recognizer = Recognizer()
-		resampled = recognizer.resample(points, 8)
-		expected_result = np.array([[0.5, 0.],
-									[1., 0.],
-									[1., 0.5],
-									[1., 1.],
-									[0.5, 1.],
-									[0., 1.],
-									[0., 0.5],
-									[0., 0.]])
-		self.assertTrue((expected_result == resampled).all())
+		resampled = np.array(recognizer.resample(points, 9))
+		self.assertTrue(len(resampled) == 9)
+
+	def test_resample_more_points(self):
+		points = [[i, j] for i in range(10) for j in range(10)]
+		recognizer = Recognizer()
+		resampled = recognizer.resample(points, 256)
+		self.assertTrue(len(resampled) == 256)
 
 	def test_rotate2D_center0(self):
 		# Test rotation around 0,0
@@ -43,6 +41,23 @@ class TestRecognizer(unittest.TestCase):
 							[0., 0.],
 							[1., 0.]]
 		self.assertTrue(np.allclose(rotated_points, expected_result, 1e-8))
+
+	def test_match_triangle(self):
+		# Add the templates to the recognizer
+		recognizer = Recognizer()
+		for template in templates:
+			recognizer.addTemplate(template)
+		# Test that all the templates can be found
+		for template in templates:
+			points = recognizer.resample(list(template.points), numPoints)
+			points = recognizer.rotateToZero(points)
+			points = recognizer.scaleToSquare(points)
+			points = recognizer.translateToOrigin(points)
+			matched_template, score = recognizer.recognize(points)
+			if score < .8:
+				continue
+			self.assertEquals(matched_template.name, template.name)
+
 
 
 if __name__ == '__main__':

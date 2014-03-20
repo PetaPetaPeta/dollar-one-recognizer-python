@@ -1,8 +1,10 @@
 import numpy as np
 import numpy.linalg as linalg
 from itertools import izip
+from template import templates
 
 phi = 0.5 * (-1 + np.sqrt(5))
+numPoints = 255
 
 
 class Recognizer(object):
@@ -12,32 +14,39 @@ class Recognizer(object):
 		self.angle_range = angle_range
 		self.angle_step = angle_step
 		self.square_size = square_size
+		self.templates = []
 
 	def resample(self, points, n):
-		path_length = pathLength(points) / (n)
-		newPoints = np.zeros((1, 2))
-		D = 0
+		# Get the length that should be between the returned points
+		path_length = pathLength(points) / float(n-1)
+		newPoints = [points[0]]
+		D = 0.0
 		i = 1
-		no_of_points = len(points)
-		while i <= no_of_points:
+		while i < len(points):
 			point = points[i-1]
-			next_point = points[i % no_of_points]
+			next_point = points[i]
 			d = getDistance(point, next_point)
 			if D + d >= path_length:
-				q = np.array([0., 0.])
-				q[0] = point[0] + ((path_length-D)/d) * (next_point[0] - point[0])
-				q[1] = point[1] + ((path_length-D)/d) * (next_point[1] - point[1])
-				newPoints = np.append(newPoints, [q], 0)
-				points = np.insert(points, i, q, 0)
-				no_of_points += 1
-				D = 0
+				delta_distance = float((path_length-D)/d)
+				q = [0., 0.]
+				q[0] = point[0] + delta_distance * (next_point[0] - point[0])
+				q[1] = point[1] + delta_distance * (next_point[1] - point[1])
+				newPoints.append(q)
+				points.insert(i, q)
+				D = 0.
 			else:
 				D += d
 			i += 1
-		newPoints = newPoints[1:]  # Remove dummy points
 		if len(newPoints) == n - 1:  # Fix a possible roundoff error
-			newPoints = np.append(newPoints, [points[0]], 0)
+			newPoints.append(points[0])
 		return newPoints
+
+	def addTemplate(self, template):
+		template.points = self.resample(template.points, numPoints)
+		template.points = self.rotateToZero(template.points)
+		template.points = self.scaleToSquare(template.points)
+		template.points = self.translateToOrigin(template.points)
+		self.templates.append(template)
 
 	def indicativeAngle(self, points):
 		''' Returns the angle (radians) to rotate to get the indicative angle '''
@@ -84,11 +93,11 @@ class Recognizer(object):
 			newPoints = np.append(newPoints, [q], 0)
 		return newPoints[1:]
 
-	def recognize(self, points, templates):
+	def recognize(self, points):
 		b = np.inf
 		selected_template = None
-		for template in templates:
-			d = self.distanceAtBestAngle(points, template, -self.angle_range, self.angle_range, self.angle_step)
+		for template in self.templates:
+			d = self.distanceAtBestAngle(points, template.points, -self.angle_range, self.angle_range, self.angle_step)
 			if d < b:  # Get the best distance and template
 				b = d
 				selected_template = template
@@ -132,19 +141,19 @@ def pathDistance(path1, path2):
 
 
 def getDistance(point1, point2):
-	return linalg.norm(point2 - point1)
+	return linalg.norm(np.array(point2) - np.array(point1))
 
 
 def rotate2D(pts, cnt, ang=np.pi/4):
 	''' pts = {} Rotates points(nx2) about center cnt(2) by angle ang(1) in radian
 		http://gis.stackexchange.com/questions/23587/how-do-i-rotate-the-polygon-about-an-anchor-point-using-python-script'''
-	return np.dot(pts-cnt, np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]))+cnt
+	return np.dot(np.array(pts)-cnt, np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]))+cnt
 
 
 def pathLength(points):
 	length = 0
-	for (i, j) in pairwiseIterator(points):
-		length += linalg.norm(i - j)
+	for (i, j) in izip(points, points[1:]):
+		length += getDistance(i, j)
 	return length
 
 
@@ -153,12 +162,3 @@ def pairwiseIterator(elems):
 		yield (i, j)
 	yield (elems[-1], elems[0])
 
-templates = np.array([[[0., 0.], [1., 0.], [1., 1.], [0., 1.]]])
-points = [[0., 0.], [1., 0.], [1., 1.], [0., 1.]]
-points = np.array(points)
-recognizer = Recognizer()
-resampled = recognizer.resample(points, 8)
-points = recognizer.rotateToZero(points)
-points = recognizer.scaleToSquare(points)
-points = recognizer.translateToOrigin(points)
-print recognizer.recognize(points, templates)
