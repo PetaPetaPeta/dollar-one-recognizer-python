@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.linalg as linalg
 from itertools import izip
-from template import templates
 
 phi = 0.5 * (-1 + np.sqrt(5))
 numPoints = 255
@@ -94,6 +93,10 @@ class Recognizer(object):
 		return newPoints[1:]
 
 	def recognize(self, points):
+		points = self.resample(list(points), numPoints)
+		points = self.rotateToZero(points)
+		points = self.scaleToSquare(points)
+		points = self.translateToOrigin(points)
 		b = np.inf
 		selected_template = None
 		for template in self.templates:

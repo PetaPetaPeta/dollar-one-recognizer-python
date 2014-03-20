@@ -49,11 +49,7 @@ class TestRecognizer(unittest.TestCase):
 			recognizer.addTemplate(template)
 		# Test that all the templates can be found
 		for template in templates:
-			points = recognizer.resample(list(template.points), numPoints)
-			points = recognizer.rotateToZero(points)
-			points = recognizer.scaleToSquare(points)
-			points = recognizer.translateToOrigin(points)
-			matched_template, score = recognizer.recognize(points)
+			matched_template, score = recognizer.recognize(template.points)
 			if score < .8:
 				continue
 			self.assertEquals(matched_template.name, template.name)

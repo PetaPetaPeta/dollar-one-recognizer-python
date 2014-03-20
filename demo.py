@@ -2,8 +2,6 @@ import wx
 from recognizer import Recognizer
 from template import *
 
-numPoints = 255
-
 print "Initializing recognizer"
 recognizer = Recognizer()
 for template in templates:
@@ -42,11 +40,7 @@ class MyFrame(wx.Frame):
 			dc.DrawCircle(x, y, 3)
 
 	def LeftUp(self, event):
-		points = recognizer.resample(self.previous_points, numPoints)
-		points = recognizer.rotateToZero(points)
-		points = recognizer.scaleToSquare(points)
-		points = recognizer.translateToOrigin(points)
-		matched_template, score = recognizer.recognize(points)
+		matched_template, score = recognizer.recognize(self.previous_points)
 		self.detected_shape.SetLabel(matched_template.name)
 		self.detected_score.SetLabel("{0:.2f}".format(score*100))
 		self.previous_points = []
