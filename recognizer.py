@@ -7,8 +7,11 @@ phi = 0.5 * (-1 + np.sqrt(5))
 
 class Recognizer(object):
 	"""docstring for Recognizer"""
-	def __init__(self):
+	def __init__(self, angle_range=45., angle_step=2., square_size=250.):
 		super(Recognizer, self).__init__()
+		self.angle_range = angle_range
+		self.angle_step = angle_step
+		self.square_size = square_size
 
 	def resample(self, points, n):
 		path_length = pathLength(points) / (n)
@@ -36,9 +39,15 @@ class Recognizer(object):
 			newPoints = np.append(newPoints, [points[0]], 0)
 		return newPoints
 
-	def rotateToZero(self, points):
+	def indicativeAngle(self, points):
+		''' Returns the angle (radians) to rotate to get the indicative angle '''
 		centroid = np.mean(points, 0)
 		angle_to_rotate = np.arctan2(centroid[1]-points[0][1], centroid[0]-points[0][0])
+		return angle_to_rotate
+
+	def rotateToZero(self, points):
+		''' Rotates the points to the indicative angle '''
+		angle_to_rotate = self.indicativeAngle(points)
 		newPoints = rotate2D(points, 0, -angle_to_rotate)
 		return newPoints
 
@@ -49,10 +58,10 @@ class Recognizer(object):
 			q = np.array([0., 0.])
 			q[0] = (point[0]-centroid[0]) * np.cos(angle) - (point[1] - centroid[1]) * np.sin(angle) + centroid[0]
 			q[1] = (point[0]-centroid[0]) * np.sin(angle) + (point[1] - centroid[1]) * np.cos(angle) + centroid[1]
-			newPoints = np.append(newPoints, q, 0)
+			newPoints = np.append(newPoints, [q], 0)
 		return newPoints[1:]
 
-	def scaleToSquare(self, points, size):
+	def scaleToSquare(self, points):
 		max_x, max_y = np.max(points, 0)
 		min_x, min_y = np.min(points, 0)
 		b_width = max_x - min_x
@@ -60,30 +69,30 @@ class Recognizer(object):
 		newPoints = np.zeros((1, 2))
 		for point in points:
 			q = np.array([0., 0.])
-			q[0] = point[0] * (size / b_width)
-			q[1] = point[1] * (size / b_height)
-			newPoints = np.append(newPoints, q, 0)
+			q[0] = point[0] * (self.square_size / b_width)
+			q[1] = point[1] * (self.square_size / b_height)
+			newPoints = np.append(newPoints, [q], 0)
 		return newPoints[1:]
 
-	def translateToOrigin(points):
+	def translateToOrigin(self, points):
 		centroid = np.mean(points, 0)
 		newPoints = np.zeros((1, 2))
 		for point in points:
 			q = np.array([0., 0.])
 			q[0] = point[0] - centroid[0]
 			q[1] = point[1] - centroid[1]
-			newPoints = np.append(newPoints, q, 0)
+			newPoints = np.append(newPoints, [q], 0)
 		return newPoints[1:]
 
 	def recognize(self, points, templates):
 		b = np.inf
 		selected_template = None
 		for template in templates:
-			d = self.distanceAtBestAngle(points, template, -angle, angle, angle_step)
+			d = self.distanceAtBestAngle(points, template, -self.angle_range, self.angle_range, self.angle_step)
 			if d < b:  # Get the best distance and template
 				b = d
 				selected_template = template
-		score = 1 - b / (0.5 * np.sqrt(size**2 + size**2))
+		score = 1 - b / (0.5 * np.sqrt(self.square_size**2 + self.square_size**2))
 		return selected_template, score
 
 	def distanceAtBestAngle(self, points, template, angle_a, angle_b, angle_step):
@@ -104,7 +113,7 @@ class Recognizer(object):
 				f_1 = f_2
 				x_2 = (1 - phi) * angle_a + phi * angle_b
 				f_2 = self.distanceAtAngle(points, template, x_2)
-		return np.min(f_1, f_2)
+		return min(f_1, f_2)
 
 	def distanceAtAngle(self, points, template, angle):
 		newPoints = self.rotateBy(points, angle)
@@ -144,12 +153,12 @@ def pairwiseIterator(elems):
 		yield (i, j)
 	yield (elems[-1], elems[0])
 
-
+templates = np.array([[[0., 0.], [1., 0.], [1., 1.], [0., 1.]]])
 points = [[0., 0.], [1., 0.], [1., 1.], [0., 1.]]
 points = np.array(points)
 recognizer = Recognizer()
 resampled = recognizer.resample(points, 8)
-# print resampled
-# print recognizer.rotateToZero(resampled).shape
-
-# print points
+points = recognizer.rotateToZero(points)
+points = recognizer.scaleToSquare(points)
+points = recognizer.translateToOrigin(points)
+print recognizer.recognize(points, templates)
