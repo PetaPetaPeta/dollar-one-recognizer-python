@@ -55,6 +55,5 @@ class TestRecognizer(unittest.TestCase):
 			self.assertEquals(matched_template.name, template.name)
 
 
-
 if __name__ == '__main__':
 	unittest.main()
