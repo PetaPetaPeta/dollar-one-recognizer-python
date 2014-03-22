@@ -7,19 +7,21 @@ recognizer = Recognizer()
 for template in templates:
 	recognizer.addTemplate(template)
 print "Initilized recognizer!"
+frame_height = 400
+frame_width = 400
 
 
 class MyApp(wx.App):
 	def OnInit(self):
-		self.frame = MyFrame(None, "Sample")  # add two lines here
+		self.frame = MyFrame(None, "Mouse recognizer", (frame_height, frame_width))  # add two lines here
 		self.frame.Centre()
 		self.frame.Show(True)
 		return True
 
 
 class MyFrame(wx.Frame):
-	def __init__(self, parent, title):
-		wx.Frame.__init__(self, parent, title=title)
+	def __init__(self, parent, title, size):
+		wx.Frame.__init__(self, parent, title=title, size=size)
 		wx.StaticText(self, label='Detected shape:', pos=(10, 10))
 		wx.StaticText(self, label='Detected score:', pos=(10, 30))
 		self.detected_shape = wx.StaticText(self, label='', pos=(95, 10))

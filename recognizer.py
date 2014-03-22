@@ -42,10 +42,11 @@ class Recognizer(object):
 
 	def addTemplate(self, template):
 		template.points = self.resample(template.points, numPoints)
+		indicative_angle = self.indicativeAngle(template.points)
 		template.points = self.rotateToZero(template.points)
 		template.points = self.scaleToSquare(template.points)
 		template.points = self.translateToOrigin(template.points)
-		self.templates.append(template)
+		self.templates.append((template,indicative_angle))
 
 	def indicativeAngle(self, points):
 		''' Returns the angle (radians) to rotate to get the indicative angle '''
@@ -94,18 +95,34 @@ class Recognizer(object):
 
 	def recognize(self, points):
 		points = self.resample(list(points), numPoints)
+		indicative_angle = self.indicativeAngle(points)
 		points = self.rotateToZero(points)
 		points = self.scaleToSquare(points)
 		points = self.translateToOrigin(points)
 		b = np.inf
 		selected_template = None
-		for template in self.templates:
+		selected_rotation = ""
+		for template, rotation in self.templates:
 			d = self.distanceAtBestAngle(points, template.points, -self.angle_range, self.angle_range, self.angle_step)
 			if d < b:  # Get the best distance and template
 				b = d
 				selected_template = template
+				selected_rotation = rotation
 		score = 1 - b / (0.5 * np.sqrt(self.square_size**2 + self.square_size**2))
+		self.getRotation(indicative_angle)
 		return selected_template, score
+
+	def getRotation(self, angle):
+		angle = np.rad2deg(angle)
+		print angle
+		if angle > -45 and angle < 45:
+			print "Rotation: Right"
+		if angle <= -45 and angle >= -135:
+			print "Rotation: Up"
+		if angle < -135 and angle >= -180:
+			print "Rotation: Left"
+		if angle > 45 and angle <= 135:
+			print "Rotation: Down"
 
 	def distanceAtBestAngle(self, points, template, angle_a, angle_b, angle_step):
 		x_1 = phi * angle_a + (1 - phi) * angle_b
