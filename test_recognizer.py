@@ -1,3 +1,5 @@
+# Author: Peter Poulsen
+# Date: 2014-03-22
 import unittest
 import numpy as np
 from recognizer import *

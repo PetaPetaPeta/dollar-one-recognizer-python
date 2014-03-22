@@ -1,3 +1,5 @@
+# Author: Peter Poulsen
+# Date: 2014-03-22
 import wx
 from recognizer import Recognizer
 from template import *
@@ -44,8 +46,10 @@ class MyFrame(wx.Frame):
 		wx.Frame.__init__(self, parent, title=title, size=size)
 		wx.StaticText(self, label='Detected shape:', pos=(10, 10))
 		wx.StaticText(self, label='Detected score:', pos=(10, 30))
+		# wx.StaticText(self, label='Detected rotation:', pos=(10, 50))
 		self.detected_shape = wx.StaticText(self, label='', pos=(95, 10))
 		self.detected_score = wx.StaticText(self, label='', pos=(93, 30))
+		self.detected_rotation = wx.StaticText(self, label='', pos=(106, 50))
 		self.previous_points = []
 
 	def TuioMove(self, x, y, angle):
@@ -56,7 +60,7 @@ class MyFrame(wx.Frame):
 			dc.DrawCircle(x, y, 3)
 		else:
 			if len(self.previous_points) > 30:
-				matched_template, score = recognizer.recognize(self.previous_points)
+				matched_template, score, rotation = recognizer.recognize(self.previous_points)
 				self.detected_shape.SetLabel(matched_template.name)
 				self.detected_score.SetLabel("{0:.2f}".format(score*100))
 			self.previous_points = []

@@ -1,3 +1,5 @@
+# Author: Peter Poulsen
+# Date: 2014-03-22
 import numpy as np
 import numpy.linalg as linalg
 from itertools import izip
@@ -101,28 +103,25 @@ class Recognizer(object):
 		points = self.translateToOrigin(points)
 		b = np.inf
 		selected_template = None
-		selected_rotation = ""
 		for template, rotation in self.templates:
 			d = self.distanceAtBestAngle(points, template.points, -self.angle_range, self.angle_range, self.angle_step)
 			if d < b:  # Get the best distance and template
 				b = d
 				selected_template = template
-				selected_rotation = rotation
 		score = 1 - b / (0.5 * np.sqrt(self.square_size**2 + self.square_size**2))
-		self.getRotation(indicative_angle)
-		return selected_template, score
+		rotation = self.getRotation(indicative_angle)
+		return selected_template, score, rotation
 
 	def getRotation(self, angle):
 		angle = np.rad2deg(angle)
-		print angle
 		if angle > -45 and angle < 45:
-			print "Rotation: Right"
+			return "Right"
 		if angle <= -45 and angle >= -135:
-			print "Rotation: Up"
+			return "Up"
 		if angle < -135 and angle >= -180:
-			print "Rotation: Left"
+			return "Left"
 		if angle > 45 and angle <= 135:
-			print "Rotation: Down"
+			return "Down"
 
 	def distanceAtBestAngle(self, points, template, angle_a, angle_b, angle_step):
 		x_1 = phi * angle_a + (1 - phi) * angle_b
